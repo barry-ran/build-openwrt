@@ -100,6 +100,16 @@ const SOURCE_BRANCHES = {
     recommended: false,
     stability: '中',
     plugins: '增强'
+  },
+  'custom': {
+    name: '自定义仓库',
+    description: '使用自定义的OpenWrt Fork仓库，可指定分支/Tag/Commit',
+    repo: '',
+    branch: '',
+    recommended: false,
+    stability: '未知',
+    plugins: '自定义',
+    isCustom: true
   }
 };
 

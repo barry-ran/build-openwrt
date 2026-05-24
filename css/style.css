@@ -1134,3 +1134,59 @@ body {
     font-size: 1rem;
   }
 }
+
+/* === 自定义仓库表单 === */
+.custom-source-form {
+  display: none;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.custom-source-form.show {
+  display: block;
+}
+
+.custom-source-form .form-group {
+  margin-bottom: 12px;
+}
+
+.custom-source-form .form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.custom-source-form .form-label .required {
+  color: #e74c3c;
+}
+
+.custom-source-form .form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #fafafa;
+}
+
+.custom-source-form .form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  background: #fff;
+}
+
+.custom-source-form .form-input::placeholder {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.custom-source-form .form-hint {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 3px;
+}

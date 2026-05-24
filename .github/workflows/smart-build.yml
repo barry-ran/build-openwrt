@@ -21,6 +21,19 @@ on:
           - lede-master
           - immortalwrt-master
           - Lienol-master
+          - custom
+      
+      custom_repo_url:
+        description: "自定义仓库地址(选custom时填写，如 https://github.com/barry-ran/immortalwrt)"
+        required: false
+        default: ""
+        type: string
+      
+      custom_repo_branch:
+        description: "自定义分支/Tag/Commit(选custom时填写，如 openwrt-25.12)"
+        required: false
+        default: ""
+        type: string
       
       target_device:
         description: "目标设备"
@@ -83,12 +96,16 @@ jobs:
             TARGET_DEVICE="${{ github.event.client_payload.target_device }}"
             PLUGINS_LIST="${{ github.event.client_payload.plugins }}"
             BUILD_DESC="Web界面编译"
+            CUSTOM_REPO_URL="${{ github.event.client_payload.custom_repo_url }}"
+            CUSTOM_REPO_BRANCH="${{ github.event.client_payload.custom_repo_branch }}"
           else
             echo "🖱️ 检测到手动触发的编译请求"
             SOURCE_BRANCH="${{ github.event.inputs.source_branch }}"
             TARGET_DEVICE="${{ github.event.inputs.target_device }}"
             PLUGINS_LIST="${{ github.event.inputs.plugins_list }}"
             BUILD_DESC="${{ github.event.inputs.build_description }}"
+            CUSTOM_REPO_URL="${{ github.event.inputs.custom_repo_url }}"
+            CUSTOM_REPO_BRANCH="${{ github.event.inputs.custom_repo_branch }}"
           fi
           
           # 设置默认值
@@ -136,6 +153,21 @@ jobs:
               FEEDS_CONF="config/Lienol-master/feeds.conf.default"
               CONFIG_FILE="config/Lienol-master/config"
 
+              ;;
+            "custom")
+              # 自定义仓库：从用户输入获取仓库地址和分支
+              if [ -z "$CUSTOM_REPO_URL" ] || [ -z "$CUSTOM_REPO_BRANCH" ]; then
+                echo "❌ 自定义仓库需要提供仓库地址和分支信息"
+                exit 1
+              fi
+              REPO_URL="$CUSTOM_REPO_URL"
+              REPO_BRANCH="$CUSTOM_REPO_BRANCH"
+              # 从仓库URL中提取名称作为SOURCE_NAME
+              SOURCE_NAME="Custom_$(echo "$REPO_URL" | sed 's|https://github.com/||' | tr '/' '_')"
+              FEEDS_CONF=""
+              CONFIG_FILE=""
+              echo "🔗 使用自定义仓库: $REPO_URL"
+              echo "🌿 分支/Tag/Commit: $REPO_BRANCH"
               ;;
             *)
               echo "❌ 不支持的源码分支: $SOURCE_BRANCH"
@@ -385,8 +417,20 @@ jobs:
           # 显示磁盘空间
           df -hT $PWD
           
-          # 克隆源码（只克隆最新提交以节省时间和空间）
-          git clone -q --single-branch --depth=1 --branch=${{ needs.prepare.outputs.repo_branch }} ${{ needs.prepare.outputs.repo_url }} openwrt
+          # 克隆源码（支持分支/Tag/Commit）
+          # 先尝试使用--branch克隆（适用于分支和Tag）
+          if git clone -q --single-branch --depth=1 --branch=${{ needs.prepare.outputs.repo_branch }} ${{ needs.prepare.outputs.repo_url }} openwrt 2>/dev/null; then
+            echo "✅ 通过分支/Tag克隆成功"
+          else
+            # 如果失败，可能是Commit SHA，使用完整克隆后checkout
+            echo "⚠️ 分支/Tag克隆失败，尝试按Commit SHA克隆..."
+            git clone -q ${{ needs.prepare.outputs.repo_url }} openwrt
+            cd openwrt
+            git checkout ${{ needs.prepare.outputs.repo_branch }}
+            cd ..
+            echo "✅ 通过Commit SHA检出成功"
+          fi
+          
           ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
           
           echo "status=success" >> $GITHUB_OUTPUT
@@ -396,11 +440,11 @@ jobs:
           echo "🔧 配置自定义feeds..."
           
           # 如果存在对应分支的feeds配置文件则使用
-          if [ -f "${{ needs.prepare.outputs.feeds_conf }}" ]; then
+          if [ -n "${{ needs.prepare.outputs.feeds_conf }}" ] && [ -f "${{ needs.prepare.outputs.feeds_conf }}" ]; then
             cp -f ${{ needs.prepare.outputs.feeds_conf }} openwrt/feeds.conf.default
             echo "📋 使用自定义feeds配置: ${{ needs.prepare.outputs.feeds_conf }}"
           else
-            echo "📋 使用默认feeds配置"
+            echo "📋 使用源码自带的默认feeds配置"
           fi
 
       - name: 📥 更新feeds

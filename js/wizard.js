@@ -12,6 +12,8 @@ class WizardManager {
             device: '',
             plugins: [],
             customSources: [],
+            customRepo: '',
+            customBranch: '',
             optimization: 'balanced'
         };
 
@@ -422,35 +424,70 @@ class WizardManager {
             const isSelected = this.config.source === key;
             const recommendedBadge = source.recommended ? '<span class="recommended-badge">推荐</span>' : '';
 
-            html += `
-                <div class="source-option ${isSelected ? 'selected' : ''}" data-source="${key}">
-                    ${recommendedBadge}
-                    <div class="option-header">
-                        <h3>${source.name}</h3>
-                        <div class="option-meta">
-                            <span class="stability-badge">${source.stability}</span>
-                            <span class="plugins-badge">${source.plugins}</span>
+            if (source.isCustom) {
+                // 自定义仓库选项 - 特殊渲染
+                html += `
+                    <div class="source-option ${isSelected ? 'selected' : ''}" data-source="${key}">
+                        <div class="option-header">
+                            <h3>🔗 ${source.name}</h3>
+                            <div class="option-meta">
+                                <span class="stability-badge">${source.stability}</span>
+                                <span class="plugins-badge">${source.plugins}</span>
+                            </div>
+                        </div>
+                        <p class="option-description">${source.description}</p>
+                        <div class="custom-source-form ${isSelected ? 'show' : ''}" id="custom-source-form">
+                            <div class="form-group">
+                                <label class="form-label">仓库地址 <span class="required">*</span></label>
+                                <input type="text" class="form-input" id="custom-repo-url" 
+                                    placeholder="例如: https://github.com/barry-ran/immortalwrt"
+                                    value="${this.config.customRepo || ''}"
+                                    onclick="event.stopPropagation()">
+                                <div class="form-hint">支持任何GitHub上的OpenWrt Fork仓库</div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">分支/Tag/Commit <span class="required">*</span></label>
+                                <input type="text" class="form-input" id="custom-repo-branch" 
+                                    placeholder="例如: openwrt-25.12, main, v23.05.0, abc1234"
+                                    value="${this.config.customBranch || ''}"
+                                    onclick="event.stopPropagation()">
+                                <div class="form-hint">可以是分支名、Tag名或Commit SHA</div>
+                            </div>
                         </div>
                     </div>
-                    <p class="option-description">${source.description}</p>
-                    <div class="option-details">
-                        <div class="detail-item">
-                            <span class="detail-label">仓库:</span>
-                            <span class="detail-value">${this.getRepoShortName(source.repo)}</span>
+                `;
+            } else {
+                html += `
+                    <div class="source-option ${isSelected ? 'selected' : ''}" data-source="${key}">
+                        ${recommendedBadge}
+                        <div class="option-header">
+                            <h3>${source.name}</h3>
+                            <div class="option-meta">
+                                <span class="stability-badge">${source.stability}</span>
+                                <span class="plugins-badge">${source.plugins}</span>
+                            </div>
                         </div>
-                        <div class="detail-item">
-                            <span class="detail-label">分支:</span>
-                            <span class="detail-value">${source.branch}</span>
+                        <p class="option-description">${source.description}</p>
+                        <div class="option-details">
+                            <div class="detail-item">
+                                <span class="detail-label">仓库:</span>
+                                <span class="detail-value">${this.getRepoShortName(source.repo)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">分支:</span>
+                                <span class="detail-value">${source.branch}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            }
         });
 
         html += '</div>';
         container.innerHTML = html;
 
         this.bindSourceOptionEvents();
+        this.bindCustomSourceEvents();
     }
 
     /**
@@ -476,6 +513,39 @@ class WizardManager {
                 });
             }
         });
+    }
+
+    /**
+     * 绑定自定义仓库输入框事件
+     */
+    bindCustomSourceEvents() {
+        const repoUrlInput = document.getElementById('custom-repo-url');
+        const repoBranchInput = document.getElementById('custom-repo-branch');
+
+        if (repoUrlInput) {
+            repoUrlInput.addEventListener('input', (e) => {
+                this.config.customRepo = e.target.value.trim();
+            });
+            repoUrlInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // 确保点击输入框时选中自定义源
+                if (this.config.source !== 'custom') {
+                    this.selectSource('custom');
+                }
+            });
+        }
+
+        if (repoBranchInput) {
+            repoBranchInput.addEventListener('input', (e) => {
+                this.config.customBranch = e.target.value.trim();
+            });
+            repoBranchInput.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.config.source !== 'custom') {
+                    this.selectSource('custom');
+                }
+            });
+        }
     }
 
     /**
@@ -665,14 +735,32 @@ class WizardManager {
         const sourceInfo = this.sourceBranches[this.config.source];
         const deviceInfo = this.deviceConfigs[this.config.device];
 
+        // 自定义仓库显示信息
+        let sourceDisplayName = sourceInfo?.name || '未选择';
+        let sourceExtraInfo = '';
+        if (this.config.source === 'custom' && this.config.customRepo) {
+            sourceDisplayName = '自定义仓库';
+            sourceExtraInfo = `
+                <div class="summary-item">
+                    <div class="summary-label">仓库地址</div>
+                    <div class="summary-value" style="word-break:break-all;">${this.config.customRepo}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-label">分支/Tag/Commit</div>
+                    <div class="summary-value">${this.config.customBranch || '未指定'}</div>
+                </div>
+            `;
+        }
+
         let html = `
             <div class="summary-section">
                 <h3>📋 配置摘要</h3>
                 <div class="summary-grid">
                     <div class="summary-item">
                         <div class="summary-label">源码分支</div>
-                        <div class="summary-value">${sourceInfo?.name || '未选择'}</div>
+                        <div class="summary-value">${sourceDisplayName}</div>
                     </div>
+                    ${sourceExtraInfo}
                     <div class="summary-item">
                         <div class="summary-label">目标设备</div>
                         <div class="summary-value">${deviceInfo?.name || '未选择'}</div>
@@ -755,6 +843,23 @@ class WizardManager {
                 return;
             }
 
+            // 验证自定义仓库配置
+            if (this.config.source === 'custom') {
+                if (!this.config.customRepo) {
+                    alert('请输入自定义仓库地址');
+                    return;
+                }
+                if (!this.config.customBranch) {
+                    alert('请输入分支/Tag/Commit');
+                    return;
+                }
+                // 验证仓库地址格式
+                if (!this.config.customRepo.match(/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/)) {
+                    alert('仓库地址格式不正确，请输入完整的GitHub仓库URL\n例如: https://github.com/barry-ran/immortalwrt');
+                    return;
+                }
+            }
+
             if (!this.config.device) {
                 alert('请先选择目标设备');
                 return;
@@ -792,7 +897,12 @@ class WizardManager {
 
             // 添加初始日志
             this.addLogEntry('info', '🎯 正在启动智能编译工作流...');
-            this.addLogEntry('info', `📋 源码: ${this.sourceBranches[this.config.source]?.name}`);
+            if (this.config.source === 'custom') {
+                this.addLogEntry('info', `📋 源码: 自定义仓库 (${this.config.customRepo})`);
+                this.addLogEntry('info', `🌿 分支: ${this.config.customBranch}`);
+            } else {
+                this.addLogEntry('info', `📋 源码: ${this.sourceBranches[this.config.source]?.name}`);
+            }
             this.addLogEntry('info', `🔧 设备: ${this.deviceConfigs[this.config.device]?.name}`);
             this.addLogEntry('info', `📦 插件: ${this.config.plugins.length}个`);
 
@@ -817,8 +927,7 @@ class WizardManager {
      * 生成编译配置
      */
     generateBuildConfig() {
-        // 确保只触发智能编译工作流
-        return {
+        const buildData = {
             source_branch: this.config.source,
             target_device: this.config.device,
             plugins: this.config.plugins.join(','), // 转换为逗号分隔的字符串
@@ -828,6 +937,14 @@ class WizardManager {
             // 明确指定使用智能编译工作流
             workflow_type: 'smart_build'
         };
+
+        // 如果是自定义仓库，添加自定义仓库信息
+        if (this.config.source === 'custom') {
+            buildData.custom_repo_url = this.config.customRepo;
+            buildData.custom_repo_branch = this.config.customBranch;
+        }
+
+        return buildData;
     }
 
     /**
@@ -864,6 +981,8 @@ class WizardManager {
                         trigger_method: 'web_interface',
                         workflow_preference: 'smart_build_only', // 明确指定只使用智能编译
                         disable_universal_build: true, // 禁用通用编译工作流
+                        custom_repo_url: buildData.custom_repo_url || '',
+                        custom_repo_branch: buildData.custom_repo_branch || '',
                         timestamp: new Date().toISOString()
                     }
                 })
@@ -1207,9 +1326,14 @@ class WizardManager {
         const sourceInfo = this.sourceBranches[this.config.source];
         const deviceInfo = this.deviceConfigs[this.config.device];
 
+        let sourceDesc = sourceInfo?.name || '未知';
+        if (this.config.source === 'custom') {
+            sourceDesc = `自定义仓库\n  仓库: ${this.config.customRepo}\n  分支: ${this.config.customBranch}`;
+        }
+
         return `确认开始编译？\n\n` +
             `📋 编译配置:\n` +
-            `源码分支: ${sourceInfo?.name || '未知'}\n` +
+            `源码分支: ${sourceDesc}\n` +
             `目标设备: ${deviceInfo?.name || '未知'}\n` +
             `选中插件: ${this.config.plugins.length}个\n` +
             `工作流类型: 智能编译 (smart-build.yml)\n\n` +
