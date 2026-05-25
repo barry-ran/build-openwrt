@@ -40,7 +40,10 @@
 
 /* 恢复某些元素的点击事件（如果需要） */
 .source-option a,
-.source-option button {
+.source-option button,
+.source-option input,
+.source-option textarea,
+.source-option select {
     pointer-events: auto;
 }
 
