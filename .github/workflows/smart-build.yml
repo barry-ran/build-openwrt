@@ -89,7 +89,7 @@ jobs:
       
     steps:
       - name: 📥 检出代码
-        uses: actions/checkout@v4  # 更新到最新版本
+        uses: actions/checkout@v6  # 支持 Node.js 24
       
       - name: ⚙️ 解析编译配置
         id: config
@@ -236,11 +236,11 @@ jobs:
     runs-on: ubuntu-24.04  # 解决Ubuntu 20.04弃用问题
     needs: prepare
     name: 🔨 固件编译
-    if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}  # 安全检查
+    if: ${{ github.event.repository.owner.id == github.event.sender.id }}  # 安全检查
     
     steps:
       - name: 📥 检出代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🚀 初始化编译环境
         id: init
@@ -626,7 +626,7 @@ jobs:
           echo "status=success" >> $GITHUB_OUTPUT
           echo "✅ 编译产物整理完成"
       - name: ⬆️ 上传固件到 Artifacts
-        uses: actions/upload-artifact@v4  # 更新到最新版本
+        uses: actions/upload-artifact@v7  # 支持 Node.js 24
         if: steps.organize.outputs.status == 'success'
         with:
           name: ${{ needs.prepare.outputs.build_tag }}
