@@ -612,6 +612,10 @@ jobs:
           本固件仅供学习交流使用，使用者需自行承担刷机风险。
           EOF
           
+          # 复制编译配置文件
+          cp $GITHUB_WORKSPACE/openwrt/.config ./build.config
+          echo "📋 已保存编译配置文件 (.config)"
+          
           # 生成SHA256校验文件
           for file in OpenWrt_*.bin OpenWrt_*.img OpenWrt_*.gz; do
             if [ -f "$file" ]; then
@@ -656,6 +660,7 @@ jobs:
           files: |
             ${{ env.FIRMWARE_PATH }}/OpenWrt_*
             ${{ env.FIRMWARE_PATH }}/sha256sums.txt
+            ${{ env.FIRMWARE_PATH }}/build.config
           draft: false
           prerelease: false
 
