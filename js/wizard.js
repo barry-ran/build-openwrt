@@ -14,6 +14,7 @@ class WizardManager {
             customSources: [],
             customRepo: '',
             customBranch: '',
+            customPackages: '',
             optimization: 'balanced'
         };
 
@@ -676,7 +677,29 @@ class WizardManager {
             html += '</div></div>';
         });
 
+        // 自定义包输入区域
+        html += `
+            <div class="plugin-category custom-packages-section">
+                <h3 class="category-title">📝 自定义软件包</h3>
+                <p class="custom-packages-hint">
+                    输入 make menuconfig 中的任意软件包名，每行一个。支持所有类型的包（luci-app-*、kmod-*、协议包等）。
+                    <br>例如: <code>xl2tpd</code>、<code>kmod-usb-net-rndis</code>、<code>luci-app-frpc</code>、<code>ipset</code>
+                </p>
+                <textarea id="custom-packages-input" 
+                    class="custom-packages-textarea" 
+                    rows="6" 
+                    placeholder="每行一个包名，例如：&#10;xl2tpd&#10;strongswan&#10;kmod-nft-tproxy&#10;luci-app-frpc&#10;curl"
+                    onclick="event.stopPropagation()">${this.config.customPackages || ''}</textarea>
+                <div class="custom-packages-stats" id="custom-packages-stats">
+                    ${this.getCustomPackagesStats()}
+                </div>
+            </div>
+        `;
+
         container.innerHTML = html;
+
+        // 绑定自定义包输入事件
+        this.bindCustomPackagesEvents();
 
         // 添加冲突检测面板
         this.renderConflictDetection();
@@ -769,6 +792,10 @@ class WizardManager {
                         <div class="summary-label">选中插件</div>
                         <div class="summary-value">${this.config.plugins.length} 个</div>
                     </div>
+                    <div class="summary-item">
+                        <div class="summary-label">自定义包</div>
+                        <div class="summary-value">${this.parseCustomPackages().length} 个</div>
+                    </div>
                 </div>
             </div>
             
@@ -780,6 +807,11 @@ class WizardManager {
                 '未选择插件'
             }
                 </div>
+                ${this.parseCustomPackages().length > 0 ? `
+                <div class="plugin-summary" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                    <strong>自定义包:</strong> ${this.parseCustomPackages().join(', ')}
+                </div>
+                ` : ''}
             </div>
             
             <div class="summary-section">
@@ -828,6 +860,43 @@ class WizardManager {
 
         this.renderPluginSelection();
         console.log('🔧 插件状态更新:', pluginKey, index > -1 ? '移除' : '添加');
+    }
+
+    /**
+     * 绑定自定义包输入事件
+     */
+    bindCustomPackagesEvents() {
+        const textarea = document.getElementById('custom-packages-input');
+        if (textarea) {
+            textarea.addEventListener('input', (e) => {
+                this.config.customPackages = e.target.value;
+                const statsEl = document.getElementById('custom-packages-stats');
+                if (statsEl) {
+                    statsEl.innerHTML = this.getCustomPackagesStats();
+                }
+            });
+        }
+    }
+
+    /**
+     * 获取自定义包统计信息
+     */
+    getCustomPackagesStats() {
+        const packages = this.parseCustomPackages();
+        if (packages.length === 0) return '<span class="stats-empty">未添加自定义包</span>';
+        return `<span class="stats-count">已添加 ${packages.length} 个自定义包: ${packages.join(', ')}</span>`;
+    }
+
+    /**
+     * 解析自定义包列表
+     */
+    parseCustomPackages() {
+        if (!this.config.customPackages) return [];
+        return this.config.customPackages
+            .split(/[\n,]+/)
+            .map(p => p.trim())
+            .filter(p => p.length > 0)
+            .filter(p => /^[\w][\w.-]*$/.test(p));
     }
 
     // === 编译相关方法 ===
@@ -927,10 +996,14 @@ class WizardManager {
      * 生成编译配置
      */
     generateBuildConfig() {
+        // 合并勾选的插件 + 自定义输入的包名，去重
+        const customPkgs = this.parseCustomPackages();
+        const allPlugins = [...new Set([...this.config.plugins, ...customPkgs])];
+
         const buildData = {
             source_branch: this.config.source,
             target_device: this.config.device,
-            plugins: this.config.plugins.join(','), // 转换为逗号分隔的字符串
+            plugins: allPlugins.join(','), // 转换为逗号分隔的字符串
             description: '智能编译工具Web界面触发',
             timestamp: Date.now(),
             build_id: 'web_build_' + Date.now(),

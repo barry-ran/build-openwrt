@@ -1135,6 +1135,64 @@ body {
   }
 }
 
+/* === 自定义软件包输入 === */
+.custom-packages-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px dashed #ccc;
+}
+
+.custom-packages-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.custom-packages-hint code {
+  background: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  color: #495057;
+}
+
+.custom-packages-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.9rem;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #fff;
+}
+
+.custom-packages-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.custom-packages-stats {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.custom-packages-stats .stats-count {
+  color: #27ae60;
+  font-weight: 500;
+}
+
+.custom-packages-stats .stats-empty {
+  color: #aaa;
+}
+
 /* === 自定义仓库表单 === */
 .custom-source-form {
   display: none;
