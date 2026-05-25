@@ -496,6 +496,8 @@ jobs:
           esac
           # 合并用户插件和推荐插件，去重
           PLUGINS="${{ needs.prepare.outputs.plugins_list }}"
+          # 将逗号分隔转换为空格分隔
+          PLUGINS=$(echo "$PLUGINS" | tr ',' ' ')
           ALL_PLUGINS="$RECOMMEND_PLUGINS $PLUGINS"
           # 去重
           ALL_PLUGINS=$(echo $ALL_PLUGINS | tr ' ' '\n' | sort | uniq | tr '\n' ' ')
@@ -558,17 +560,13 @@ jobs:
           FIRMWARE_SIZE=$(du -sh . | cut -f1)
           echo "FIRMWARE_SIZE=$FIRMWARE_SIZE" >> $GITHUB_ENV
           
-          # 重命名固件文件
+          # 重命名固件文件 - 只加前缀，保留原始文件名
+          SOURCE_CLEAN=$(echo "${{ needs.prepare.outputs.source_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
+          DEVICE_CLEAN=$(echo "${{ needs.prepare.outputs.device_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
+          PREFIX="OpenWrt_${SOURCE_CLEAN}_${DEVICE_CLEAN}_"
           for file in *; do
-            if [[ "$file" == *.bin ]] || [[ "$file" == *.img ]] || [[ "$file" == *.gz ]]; then
-              # 提取文件扩展名
-              EXT="${file##*.}"
-              # 生成新文件名
-              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-              # 清理文件名中的特殊字符
-              SOURCE_CLEAN=$(echo "${{ needs.prepare.outputs.source_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
-              DEVICE_CLEAN=$(echo "${{ needs.prepare.outputs.device_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
-              NEW_NAME="OpenWrt_${SOURCE_CLEAN}_${DEVICE_CLEAN}_${TIMESTAMP}.${EXT}"
+            if [[ "$file" == *.bin ]] || [[ "$file" == *.img ]] || [[ "$file" == *.img.gz ]] || [[ "$file" == *.gz ]] || [[ "$file" == *.vmdk ]] || [[ "$file" == *.qcow2 ]] || [[ "$file" == *.vdi ]] || [[ "$file" == *.vhdx ]] || [[ "$file" == *.iso ]]; then
+              NEW_NAME="${PREFIX}${file}"
               mv "$file" "$NEW_NAME"
               echo "📦 重命名: $file -> $NEW_NAME"
             fi
@@ -617,7 +615,7 @@ jobs:
           echo "📋 已保存编译配置文件 (.config)"
           
           # 生成SHA256校验文件
-          for file in OpenWrt_*.bin OpenWrt_*.img OpenWrt_*.gz; do
+          for file in OpenWrt_*; do
             if [ -f "$file" ]; then
               sha256sum "$file" >> sha256sums.txt
               echo "🔒 生成校验: $file"
