@@ -63,6 +63,11 @@ on:
 env:
   TZ: Asia/Shanghai
 
+# 权限配置 - 允许创建Release和上传产物
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   # 准备阶段：解析配置和设置环境
   prepare:
