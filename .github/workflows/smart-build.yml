@@ -478,6 +478,9 @@ jobs:
           CONFIG_TARGET_x86=y
           CONFIG_TARGET_x86_64=y
           CONFIG_TARGET_x86_64_DEVICE_generic=y
+          CONFIG_TARGET_KERNEL_PARTSIZE=32
+          CONFIG_TARGET_ROOTFS_PARTSIZE=1024
+          CONFIG_TARGET_IMAGES_GZIP=y
           EOF
               RECOMMEND_PLUGINS="luci kmod-e1000 kmod-igb"
               ;;
