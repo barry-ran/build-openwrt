@@ -53,6 +53,12 @@ on:
         default: ""
         type: string
       
+      lan_ip:
+        description: "自定义LAN IP地址(留空使用默认192.168.1.1)"
+        required: false
+        default: "192.168.1.1"
+        type: string
+      
       build_description:
         description: "编译描述"
         required: false
@@ -77,6 +83,7 @@ jobs:
       source_branch: ${{ steps.config.outputs.source_branch }}
       target_device: ${{ steps.config.outputs.target_device }}
       plugins_list: ${{ steps.config.outputs.plugins_list }}
+      lan_ip: ${{ steps.config.outputs.lan_ip }}
       build_tag: ${{ steps.config.outputs.build_tag }}
       repo_url: ${{ steps.config.outputs.repo_url }}
       repo_branch: ${{ steps.config.outputs.repo_branch }}
@@ -103,6 +110,7 @@ jobs:
             BUILD_DESC="Web界面编译"
             CUSTOM_REPO_URL="${{ github.event.client_payload.custom_repo_url }}"
             CUSTOM_REPO_BRANCH="${{ github.event.client_payload.custom_repo_branch }}"
+            LAN_IP="${{ github.event.client_payload.lan_ip }}"
           else
             echo "🖱️ 检测到手动触发的编译请求"
             SOURCE_BRANCH="${{ github.event.inputs.source_branch }}"
@@ -111,6 +119,7 @@ jobs:
             BUILD_DESC="${{ github.event.inputs.build_description }}"
             CUSTOM_REPO_URL="${{ github.event.inputs.custom_repo_url }}"
             CUSTOM_REPO_BRANCH="${{ github.event.inputs.custom_repo_branch }}"
+            LAN_IP="${{ github.event.inputs.lan_ip }}"
           fi
           
           # 设置默认值
@@ -118,11 +127,13 @@ jobs:
           TARGET_DEVICE=${TARGET_DEVICE:-"x86_64"}
           PLUGINS_LIST=${PLUGINS_LIST:-""}
           BUILD_DESC=${BUILD_DESC:-"智能编译"}
+          LAN_IP=${LAN_IP:-"192.168.1.1"}
           
           echo "📋 编译配置信息:"
           echo "  源码分支: $SOURCE_BRANCH"
           echo "  目标设备: $TARGET_DEVICE"
           echo "  插件列表: $PLUGINS_LIST"
+          echo "  LAN IP: $LAN_IP"
           echo "  编译描述: $BUILD_DESC"
           
           # 根据源码分支设置仓库信息和配置文件路径
@@ -220,6 +231,7 @@ jobs:
           echo "source_branch=$SOURCE_BRANCH" >> $GITHUB_OUTPUT
           echo "target_device=$TARGET_DEVICE" >> $GITHUB_OUTPUT
           echo "plugins_list=$PLUGINS_LIST" >> $GITHUB_OUTPUT
+          echo "lan_ip=$LAN_IP" >> $GITHUB_OUTPUT
           echo "build_tag=$BUILD_TAG" >> $GITHUB_OUTPUT
           echo "repo_url=$REPO_URL" >> $GITHUB_OUTPUT
           echo "repo_branch=$REPO_BRANCH" >> $GITHUB_OUTPUT
@@ -464,6 +476,27 @@ jobs:
           cd openwrt/
           ./scripts/feeds install -a
           echo "✅ feeds安装完成"
+      - name: 🌐 设置自定义LAN IP
+        run: |
+          LAN_IP="${{ needs.prepare.outputs.lan_ip }}"
+          LAN_IP=${LAN_IP:-"192.168.1.1"}
+          echo "🌐 配置LAN IP: $LAN_IP"
+          cd openwrt
+          # 修改 config_generate 中的默认 LAN IP
+          CONFIG_GEN_FILE="package/base-files/files/bin/config_generate"
+          if [ -f "$CONFIG_GEN_FILE" ]; then
+            sed -i "s/192\.168\.1\.1/$LAN_IP/g" "$CONFIG_GEN_FILE"
+            echo "✅ LAN IP已设置为: $LAN_IP"
+          else
+            # 某些源码路径可能不同，全局搜索
+            FOUND=$(find package -name "config_generate" 2>/dev/null | head -1)
+            if [ -n "$FOUND" ]; then
+              sed -i "s/192\.168\.1\.1/$LAN_IP/g" "$FOUND"
+              echo "✅ LAN IP已设置为: $LAN_IP (路径: $FOUND)"
+            else
+              echo "⚠️ 未找到 config_generate 文件，LAN IP将使用源码默认值"
+            fi
+          fi
       - name: 🔧 生成最终编译配置
         run: |
           echo "🔧 开始生成最终编译配置..."
@@ -592,7 +625,7 @@ jobs:
           设备配置: ${{ needs.prepare.outputs.device_profile }}
           
           📱 默认信息:
-          - 默认IP地址: 192.168.1.1
+          - 默认IP地址: ${{ needs.prepare.outputs.lan_ip }}
           - 默认用户名: root
           - 默认密码: password
           - 默认WiFi名: OpenWrt (如支持)

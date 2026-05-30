@@ -15,6 +15,7 @@ class WizardManager {
             customRepo: '',
             customBranch: '',
             customPackages: '',
+            lanIp: '192.168.1.1',
             optimization: 'balanced'
         };
 
@@ -677,6 +678,25 @@ class WizardManager {
             html += '</div></div>';
         });
 
+        // LAN IP 配置区域
+        html += `
+            <div class="plugin-category custom-packages-section">
+                <h3 class="category-title">🌐 网络配置</h3>
+                <p class="custom-packages-hint">
+                    自定义路由器 LAN 口的默认 IP 地址，编译时写入固件。留空则使用默认值 <code>192.168.1.1</code>。
+                </p>
+                <div class="lan-ip-input-group">
+                    <label class="form-label">LAN IP 地址</label>
+                    <input type="text" id="lan-ip-input"
+                        class="form-input lan-ip-input"
+                        placeholder="例如: 192.168.1.1"
+                        value="${this.config.lanIp || '192.168.1.1'}"
+                        onclick="event.stopPropagation()">
+                    <div class="form-hint">路由器管理界面的默认访问地址（支持 IPv4 格式，如 192.168.100.1）</div>
+                </div>
+            </div>
+        `;
+
         // 自定义包输入区域
         html += `
             <div class="plugin-category custom-packages-section">
@@ -697,6 +717,9 @@ class WizardManager {
         `;
 
         container.innerHTML = html;
+
+        // 绑定 LAN IP 输入事件
+        this.bindLanIpEvents();
 
         // 绑定自定义包输入事件
         this.bindCustomPackagesEvents();
@@ -796,6 +819,10 @@ class WizardManager {
                         <div class="summary-label">自定义包</div>
                         <div class="summary-value">${this.parseCustomPackages().length} 个</div>
                     </div>
+                    <div class="summary-item">
+                        <div class="summary-label">LAN IP</div>
+                        <div class="summary-value">${this.config.lanIp || '192.168.1.1'}</div>
+                    </div>
                 </div>
             </div>
             
@@ -860,6 +887,18 @@ class WizardManager {
 
         this.renderPluginSelection();
         console.log('🔧 插件状态更新:', pluginKey, index > -1 ? '移除' : '添加');
+    }
+
+    /**
+     * 绑定 LAN IP 输入事件
+     */
+    bindLanIpEvents() {
+        const lanIpInput = document.getElementById('lan-ip-input');
+        if (lanIpInput) {
+            lanIpInput.addEventListener('input', (e) => {
+                this.config.lanIp = e.target.value.trim();
+            });
+        }
     }
 
     /**
@@ -1004,6 +1043,7 @@ class WizardManager {
             source_branch: this.config.source,
             target_device: this.config.device,
             plugins: allPlugins.join(','), // 转换为逗号分隔的字符串
+            lan_ip: this.config.lanIp || '192.168.1.1',
             description: '智能编译工具Web界面触发',
             timestamp: Date.now(),
             build_id: 'web_build_' + Date.now(),
@@ -1050,6 +1090,7 @@ class WizardManager {
                         source_branch: buildData.source_branch,
                         target_device: buildData.target_device,
                         plugins: buildData.plugins,
+                        lan_ip: buildData.lan_ip,
                         description: buildData.description,
                         trigger_method: 'web_interface',
                         workflow_preference: 'smart_build_only', // 明确指定只使用智能编译
@@ -1409,6 +1450,7 @@ class WizardManager {
             `源码分支: ${sourceDesc}\n` +
             `目标设备: ${deviceInfo?.name || '未知'}\n` +
             `选中插件: ${this.config.plugins.length}个\n` +
+            `LAN IP: ${this.config.lanIp || '192.168.1.1'}\n` +
             `工作流类型: 智能编译 (smart-build.yml)\n\n` +
             `⚠️ 注意事项:\n` +
             `• 编译过程约需要1-3小时\n` +
@@ -1688,6 +1730,15 @@ class WizardManager {
                     return false;
                 }
                 break;
+            case 3: {
+                const ip = this.config.lanIp || '192.168.1.1';
+                const ipPattern = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]\d|\d)){3}$/;
+                if (!ipPattern.test(ip)) {
+                    alert(`LAN IP 格式不正确："${ip}"\n请输入有效的 IPv4 地址，例如 192.168.1.1`);
+                    return false;
+                }
+                break;
+            }
         }
         return true;
     }

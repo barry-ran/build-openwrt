@@ -1248,3 +1248,46 @@ body {
   color: #888;
   margin-top: 3px;
 }
+
+/* === LAN IP 配置 === */
+.lan-ip-input-group {
+  margin-top: 4px;
+}
+
+.lan-ip-input-group .form-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.lan-ip-input {
+  width: 260px;
+  max-width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: 'Consolas', 'Monaco', monospace;
+  background: #fafafa;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.lan-ip-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  background: #fff;
+}
+
+.lan-ip-input::placeholder {
+  color: #aaa;
+  font-size: 0.85rem;
+}
+
+.lan-ip-input-group .form-hint {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 4px;
+}
