@@ -1092,12 +1092,8 @@ class WizardManager {
                         plugins: buildData.plugins,
                         lan_ip: buildData.lan_ip,
                         description: buildData.description,
-                        trigger_method: 'web_interface',
-                        workflow_preference: 'smart_build_only', // 明确指定只使用智能编译
-                        disable_universal_build: true, // 禁用通用编译工作流
                         custom_repo_url: buildData.custom_repo_url || '',
-                        custom_repo_branch: buildData.custom_repo_branch || '',
-                        timestamp: new Date().toISOString()
+                        custom_repo_branch: buildData.custom_repo_branch || ''
                     }
                 })
             });
