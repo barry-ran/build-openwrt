@@ -224,6 +224,10 @@ jobs:
               ;;
           esac
           
+          # 让源码名称明确体现实际源码分支/Tag/Commit（内置仓库和自定义仓库都适用）
+          REPO_BRANCH_LABEL=$(echo "$REPO_BRANCH" | sed 's/[^a-zA-Z0-9._-]/_/g')
+          SOURCE_NAME="${SOURCE_NAME}_${REPO_BRANCH_LABEL}"
+
           # 生成构建标签
           BUILD_TAG="OpenWrt_${SOURCE_NAME// /_}_${DEVICE_NAME}_$(date +%Y%m%d_%H%M%S)"
           
@@ -596,10 +600,8 @@ jobs:
           FIRMWARE_SIZE=$(du -sh . | cut -f1)
           echo "FIRMWARE_SIZE=$FIRMWARE_SIZE" >> $GITHUB_ENV
           
-          # 重命名固件文件 - 只加前缀，保留原始文件名
-          SOURCE_CLEAN=$(echo "${{ needs.prepare.outputs.source_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
-          DEVICE_CLEAN=$(echo "${{ needs.prepare.outputs.device_name }}" | sed 's/[^a-zA-Z0-9]/_/g')
-          PREFIX="OpenWrt_${SOURCE_CLEAN}_${DEVICE_CLEAN}_"
+          # 重命名固件文件 - 使用构建标签作为前缀，包含源码、分支、设备和时间戳
+          PREFIX=$(echo "${{ needs.prepare.outputs.build_tag }}" | sed 's/[^a-zA-Z0-9._-]/_/g')_
           for file in *; do
             if [[ "$file" == *.bin ]] || [[ "$file" == *.img ]] || [[ "$file" == *.img.gz ]] || [[ "$file" == *.gz ]] || [[ "$file" == *.vmdk ]] || [[ "$file" == *.qcow2 ]] || [[ "$file" == *.vdi ]] || [[ "$file" == *.vhdx ]] || [[ "$file" == *.iso ]]; then
               NEW_NAME="${PREFIX}${file}"
